@@ -1,0 +1,42 @@
+# Minimal, fast image with apt
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+
+ARG DOTNET_VERSION=8.0
+ARG JDK_DISTRO=temurin
+ARG JDK_VERSION=21
+ARG MAVEN_VERSION=3.9.8
+
+USER root
+
+# Basic deps and Docker CLI (to talk to host docker via mounted /var/run/docker.sock)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      curl ca-certificates unzip zip gnupg lsb-release jq wget git \
+      docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# .NET 8 SDK
+RUN wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O /tmp/packages-microsoft-prod.deb && \
+    dpkg -i /tmp/packages-microsoft-prod.deb && \
+    rm /tmp/packages-microsoft-prod.deb && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends dotnet-sdk-${DOTNET_VERSION} && \
+    rm -rf /var/lib/apt/lists/*
+
+# Temurin JDK 21
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends temurin-${JDK_VERSION}-jdk && \
+    rm -rf /var/lib/apt/lists/*
+
+# Maven 3.9.x (explicit tarball to pin version)
+ENV MAVEN_HOME=/usr/local/apache-maven-${MAVEN_VERSION}
+ENV PATH=$MAVEN_HOME/bin:$PATH
+RUN curl -fsSL https://downloads.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
+    | tar -xz -C /usr/local && ln -s ${MAVEN_HOME} /usr/local/apache-maven
+
+# Nice defaults
+ENV JAVA_HOME=/usr/lib/jvm/temurin-${JDK_VERSION}-jdk-amd64
+WORKDIR /work
+
+# Keep non-root user if using devcontainers feature packs
+USER vscode
