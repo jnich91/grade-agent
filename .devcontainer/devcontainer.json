@@ -1,0 +1,6 @@
+{
+  "name": "grading-agent minimal (dotnet8 + jdk21 + maven)",
+  "build": { "dockerfile": "Dockerfile", "context": ".." },
+  "postCreateCommand": "bash -lc 'set -e; echo \"== Tool versions ==\"; dotnet --info | head -n 20; java -version; mvn -v; echo \"== Docker guardrails smoke ==\"; docker --version >/dev/null 2>&1 && docker run --rm --network=none alpine:3.20 sh -c \"id -u; (wget -qO- http://example.com || echo no-network)\" || echo \"(docker not available in container; skipping)\"'",
+  "remoteUser": "vscode"
+}

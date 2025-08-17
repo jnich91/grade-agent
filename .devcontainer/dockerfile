@@ -25,17 +25,19 @@ RUN wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-p
 
 # Temurin JDK 21
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends temurin-${JDK_VERSION}-jdk && \
+    apt-get install -y --no-install-recommends \
+      openjdk-21-jdk maven curl ca-certificates unzip zip jq && \
     rm -rf /var/lib/apt/lists/*
 
 # Maven 3.9.x (explicit tarball to pin version)
 ENV MAVEN_HOME=/usr/local/apache-maven-${MAVEN_VERSION}
 ENV PATH=$MAVEN_HOME/bin:$PATH
-RUN curl -fsSL https://downloads.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
-    | tar -xz -C /usr/local && ln -s ${MAVEN_HOME} /usr/local/apache-maven
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openjdk-21-jdk maven curl ca-certificates unzip zip jq && \
+    rm -rf /var/lib/apt/lists/*
 
 # Nice defaults
-ENV JAVA_HOME=/usr/lib/jvm/temurin-${JDK_VERSION}-jdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 WORKDIR /work
 
 # Keep non-root user if using devcontainers feature packs

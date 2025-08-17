@@ -1,0 +1,37 @@
+name: Environment Contract
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # .NET 8
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet --info | head -n 20
+
+      # Java 21
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - run: java -version
+
+      # Maven 3.9.x
+      - name: Ensure Maven
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends maven
+          mvn -v
+
+      # Docker guardrails smoke (network disabled)
+      - name: No-network container test
+        run: |
+          docker run --rm --network=none alpine:3.20 sh -c 'id -u; (wget -qO- http://example.com || echo no-network)'
