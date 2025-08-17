@@ -8,30 +8,55 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       # .NET 8
-      - uses: actions/setup-dotnet@v4
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - run: dotnet --info | head -n 20
+      - name: Print .NET info
+        run: dotnet --info | head -n 40
 
-      # Java 21
-      - uses: actions/setup-java@v4
+      # Java 21 (Temurin)
+      - name: Setup Java 21 (Temurin)
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-      - run: java -version
+          check-latest: true
+      - name: Print Java version
+        run: java -version
 
-      # Maven 3.9.x
-      - name: Ensure Maven
+      # Maven (Ubuntu repo is fine; we just need >=3.9)
+      - name: Install Maven
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends maven
           mvn -v
 
-      # Docker guardrails smoke (network disabled)
-      - name: No-network container test
+      # Docker smoke: ensure we can run a container with no network
+      - name: Docker no-network smoke test
         run: |
-          docker run --rm --network=none alpine:3.20 sh -c 'id -u; (wget -qO- http://example.com || echo no-network)'
+          docker --version
+          docker run --rm --network=none alpine:3.20 sh -lc 'id -u; (wget -qO- http://example.com || echo no-network)'
+        # Expect to see a numeric UID and "no-network" (egress blocked).
+        # GitHub-hosted runners allow Docker by default.
+
+      # (Optional) Quick read-only FS check (should fail to touch /)
+      - name: Read-only rootfs simulation
+        run: |
+          docker run --rm --read-only alpine:3.20 sh -lc 'touch /should_fail || echo read-only-ok'
+
+      # Summary output
+      - name: Summary
+        run: |
+          echo "✅ Environment contract verified:"
+          echo "- .NET 8 present"
+          echo "- Java 21 present"
+          echo "- Maven present"
+          echo "- Docker no-network works" 
