@@ -1,5 +1,5 @@
 # grade-agent (C# Orchestrator + Java Runner)
-![Environment Contract](https://github.com/<owner>/<repo>/actions/workflows/env-check.yml/badge.svg)
+![Environment Contract](https://github.com/jnich91/grade-agent/actions/workflows/env-check.yml/badge.svg)
 
 
 **Goal:** Automate the grading of student Java submissions using a **deterministic, test-based approach** with optional AI-generated narrative feedback.  
