@@ -1,44 +1,33 @@
-# Minimal, fast image with apt
+# Ubuntu 24.04 base with apt; we’ll add .NET, JDK 21, Maven
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
-
-ARG DOTNET_VERSION=8.0
-ARG JDK_DISTRO=temurin
-ARG JDK_VERSION=21
-ARG MAVEN_VERSION=3.9.8
 
 USER root
 
-# Basic deps and Docker CLI (to talk to host docker via mounted /var/run/docker.sock)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      curl ca-certificates unzip zip gnupg lsb-release jq wget git \
-      docker.io \
-    && rm -rf /var/lib/apt/lists/*
-
-# .NET 8 SDK
-RUN wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O /tmp/packages-microsoft-prod.deb && \
-    dpkg -i /tmp/packages-microsoft-prod.deb && \
-    rm /tmp/packages-microsoft-prod.deb && \
+# Install Microsoft feed + .NET 8 SDK
+RUN wget -qO /tmp/packages-microsoft-prod.deb https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb && \
+    dpkg -i /tmp/packages-microsoft-prod.deb && rm /tmp/packages-microsoft-prod.deb && \
     apt-get update && \
-    apt-get install -y --no-install-recommends dotnet-sdk-${DOTNET_VERSION} && \
+    apt-get install -y --no-install-recommends dotnet-sdk-8.0 && \
     rm -rf /var/lib/apt/lists/*
 
-# Temurin JDK 21
+# JDK 21 + Maven from Ubuntu repos (stable)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      openjdk-21-jdk maven curl ca-certificates unzip zip jq && \
+      openjdk-21-jdk \
+      maven \
+      curl ca-certificates unzip zip jq wget git && \
     rm -rf /var/lib/apt/lists/*
 
-# Maven 3.9.x (explicit tarball to pin version)
-ENV MAVEN_HOME=/usr/local/apache-maven-${MAVEN_VERSION}
-ENV PATH=$MAVEN_HOME/bin:$PATH
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends openjdk-21-jdk maven curl ca-certificates unzip zip jq && \
-    rm -rf /var/lib/apt/lists/*
+    # after installing JDK (openjdk-21-jdk or temurin-21-jdk)
+# auto-detect JAVA_HOME from javac, create a stable symlink, and export it
+RUN set -e; \
+    JHOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"; \
+    echo "Detected JAVA_HOME=$JHOME"; \
+    ln -s "$JHOME" /usr/lib/jvm/java || true; \
+    printf 'export JAVA_HOME=/usr/lib/jvm/java\nexport PATH=$JAVA_HOME/bin:$PATH\n' > /etc/profile.d/java_home.sh
 
-# Nice defaults
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java
+ENV PATH=/usr/lib/jvm/java/bin:${PATH}
+
 WORKDIR /work
-
-# Keep non-root user if using devcontainers feature packs
 USER vscode
