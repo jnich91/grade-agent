@@ -43,7 +43,3 @@ Built for reliability, fairness, and transparency in large programming courses.
 - **Stage 4 — Dashboards & exports** (HTML summary, Canvas CSV)
 - **Stage 5 — Style checks & similarity flags**
 - **Stage 6 — Operationalization** (job queue, retries, monitoring)
-
----
-
-## 📂 Repository Structure (planned)
