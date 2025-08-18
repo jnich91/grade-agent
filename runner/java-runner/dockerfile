@@ -1,0 +1,21 @@
+# runner/java-runner/Dockerfile
+FROM maven:3.9-eclipse-temurin-21
+
+# Always set the build context relative to repo root
+COPY ./samples/palindrome-sample /template
+COPY ./runner/java-runner/entrypoint.sh /entrypoint.sh
+
+# Copy instructor template into image
+COPY samples/palindrome-sample /template
+
+# Pre-fetch ALL deps/plugins into an image-local repo
+RUN mvn -q -f /template/pom.xml -Dmaven.repo.local=/opt/m2repo -DskipTests dependency:go-offline
+
+# Also run tests once (do NOT skip) to force surefire-junit-platform to be fetched
+RUN mvn -q -f /template/pom.xml -Dmaven.repo.local=/opt/m2repo -DfailIfNoTests=false test || true
+
+# Entrypoint
+COPY runner/java-runner/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
