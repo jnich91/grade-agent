@@ -55,3 +55,6 @@ nunit-*.xml
 
 # Mac Stuff
 .DS_store
+
+# Maven build output
+target/

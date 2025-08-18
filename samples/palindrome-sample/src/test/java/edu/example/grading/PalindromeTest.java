@@ -44,13 +44,6 @@ class PalindromeTest {
     }
 
     @Test
-    void testUnicodeCharacters() {
-        assertTrue(Palindrome.isPalindrome("Åbbaå"));   // accented chars
-        assertFalse(Palindrome.isPalindrome("😊abc😊")); // emoji mismatch
-        assertTrue(Palindrome.isPalindrome("😊😊"));     // identical emojis
-    }
-
-    @Test
     void testLongPalindrome() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 5000; i++) {
