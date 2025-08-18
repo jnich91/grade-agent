@@ -1,4 +1,4 @@
-package edu.example.grading;
+package edu.cmu.ism.palindrome;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
