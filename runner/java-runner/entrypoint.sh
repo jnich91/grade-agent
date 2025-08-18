@@ -22,13 +22,10 @@ cp -R "$TEMPLATE"/. "$BUILD"/
 mkdir -p "$BUILD/src/main/java"
 
 # --- Copy student sources ---
-# Ensure a clean source root
-# Clean source root
 rm -rf "$BUILD/src/main/java" && mkdir -p "$BUILD/src/main/java"
 
 found_any=false
 while IFS= read -r -d '' f; do
-  # extract package (e.g., edu.example.grading) or empty
   pkg=$(sed -n 's/^[[:space:]]*package[[:space:]]\+\([A-Za-z0-9_\.]\+\)[[:space:]]*;.*$/\1/p' "$f" | head -n1 || true)
   if [ -n "$pkg" ]; then
     pkgpath=${pkg//./\/}
@@ -52,9 +49,6 @@ if [ "$found_any" = false ]; then
 fi
 
 # --- Run tests with strong defaults ---
-# - Use local repo in /tmp for speed and to avoid read-only issues
-# - Constrain temp dir to /tmp (writable)
-# - Timeout the whole test run (60s default)
 MVN_FLAGS=(
   -o
   -q
@@ -67,8 +61,10 @@ MVN_FLAGS=(
   test
 )
 
-
 CODE=0
+# 💡 New line to force fresh compile every run
+rm -rf "$BUILD/target"
+
 # Capture maven output to $OUT/mvn.log so host can inspect builds
 if ! timeout 60s mvn "${MVN_FLAGS[@]}" >"$OUT/mvn.log" 2>&1; then
   CODE=$?
@@ -83,10 +79,8 @@ fi
 {
   echo "runner_exit_code=$CODE"
   echo "assignment=${ASSIGNMENT_ID:-unknown}"
-  # single-line java version
   echo -n "java: " ; java -version 2>&1 | tr '\n' ' ' | sed 's/  */ /g'
   echo
-  # single-line mvn version
   echo -n "mvn:  " ; mvn -v 2>&1 | head -n1
   echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 } > "$OUT/run.meta"

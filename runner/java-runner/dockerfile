@@ -1,6 +1,10 @@
 # runner/java-runner/Dockerfile
 FROM maven:3.9-eclipse-temurin-21
 
+# Always set the build context relative to repo root
+COPY ./samples/palindrome-sample /template
+COPY ./runner/java-runner/entrypoint.sh /entrypoint.sh
+
 # Copy instructor template into image
 COPY samples/palindrome-sample /template
 
