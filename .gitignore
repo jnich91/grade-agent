@@ -53,8 +53,49 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
-# Mac Stuff
-.DS_store
-
+# -----------------------
+# Java / Maven
+# -----------------------
 # Maven build output
 target/
+
+# Gradle (if any gradle projects creep in later)
+.gradle/
+build/
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# BlueJ (some students might use it)
+*.ctxt
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# -----------------------
+# IDEs
+# -----------------------
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# VS Code
+.vscode/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# -----------------------
+# OS junk
+# -----------------------
+.DS_Store
+Thumbs.db
