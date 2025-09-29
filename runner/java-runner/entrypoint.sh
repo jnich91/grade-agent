@@ -12,7 +12,7 @@ set -eu
 LOG="/work/output/mvn.log"
 META="/work/output/run.meta"
 ASSIGNMENT_ID="${ASSIGNMENT_ID:-unknown}"
-MVN_REPO="${MVN_REPO:-/opt/m2}"
+MVN_REPO="${MVN_REPO:-/opt/m2repo}"
 MVN_ARGS="-B -o -Dmaven.repo.local=${MVN_REPO}"
 
 # ---------- helpers ----------
@@ -57,29 +57,34 @@ note "env_end"
 # ---------- layout detection ----------
 # Cases:
 #  A) /work/input/pom.xml (single-module)
-#  B) /work/input/{student,pom.xml} and /work/input/{tests,pom.xml} (reactor)
+#  B) /work/input/tests/pom.xml AND /work/input/student (reactor)   # CHANGED
 #  C) Discover exactly one pom.xml under /work/input (depth<=2)
 
 PROJECT_ROOT=""
 MODE="single"
 
 if [ -f /work/input/pom.xml ]; then
-  PROJECT_ROOT="/work/input"
+  PROJECT_ROOT="/work/project"
   MODE="single"
+  cp -r /work/input /work/project
   note "layout=single project_root=$PROJECT_ROOT"
-elif [ -f /work/input/tests/pom.xml ] && [ -f /work/input/student/pom.xml ]; then
+
+# CHANGED: don't require a student pom.xml; just require tests pom + student dir
+elif [ -f /work/input/tests/pom.xml ] && [ -d /work/input/student ]; then
   MODE="reactor"
   rm -f /work/student /work/tests 2>/dev/null || true
   ln -s /work/input/student /work/student
   ln -s /work/input/tests   /work/tests
   PROJECT_ROOT="/work"
+
+  # Top-level reactor pom (generate if missing)
   if [ ! -f /work/pom.xml ]; then
     cat > /work/pom.xml <<'EOF'
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>edu.cmu.cs</groupId>
+  <groupId>edu.example.grading</groupId>
   <artifactId>reactor</artifactId>
   <version>1.0.0</version>
   <packaging>pom</packaging>
@@ -90,12 +95,47 @@ elif [ -f /work/input/tests/pom.xml ] && [ -f /work/input/student/pom.xml ]; the
 </project>
 EOF
   fi
-  note "layout=reactor project_root=$PROJECT_ROOT modules=student,tests"
+
+  # CHANGED: Autogenerate student pom, ignoring any student-provided pom.xml
+  mkdir -p /work/student
+  # nuke any untrusted student pom if present
+  rm -f /work/student/pom.xml 2>/dev/null || true
+  cat > /work/student/pom.xml <<'EOF'
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>edu.cmu.cs</groupId>
+  <artifactId>student</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>21</release>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+EOF
+
+  note "layout=reactor project_root=$PROJECT_ROOT modules=student,tests (student pom autogen)"
+
 else
   POM_COUNT="$(find /work/input -maxdepth 2 -type f -name pom.xml | wc -l | tr -d ' ')"
   if [ "$POM_COUNT" = "1" ]; then
-    PROJECT_ROOT="$(dirname "$(find /work/input -maxdepth 2 -type f -name pom.xml)")"
+    FOUND_POM="$(find /work/input -maxdepth 2 -type f -name pom.xml)"
+    FOUND_DIR="$(dirname "$FOUND_POM")"
+    PROJECT_ROOT="/work/project"
     MODE="single"
+    cp -r "$FOUND_DIR" /work/project
     note "layout=single_discovered project_root=$PROJECT_ROOT"
   else
     note "error=no_pom_found_under_/work/input pom_count=$POM_COUNT"

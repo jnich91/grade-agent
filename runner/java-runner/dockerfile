@@ -18,4 +18,9 @@ RUN mvn -q -f /template/pom.xml -Dmaven.repo.local=/opt/m2repo -DfailIfNoTests=f
 COPY runner/java-runner/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+
+# Create mountpoints that we'll use at runtime
+RUN mkdir -p /work/input/student /work/input/tests /work/output /work/project && \
+    chown -R 65532:65532 /work
+
 ENTRYPOINT ["/entrypoint.sh"]

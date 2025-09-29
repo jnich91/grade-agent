@@ -1,4 +1,4 @@
-package edu.cmu.ism.palindrome;
+package edu.example.grading;
 
 public class Palindrome {
     /** Return true if s is a palindrome. */
