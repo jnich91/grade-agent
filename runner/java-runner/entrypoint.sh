@@ -29,7 +29,7 @@ mkdir -p /work/output || true
 # ---------- breadcrumbs ----------
 note "assignment=${ASSIGNMENT_ID}"
 note "uid_gid=$(id -u):$(id -g)"
-note "whoami=$(whoami)"
+note "whoami=$(whoami 2>/dev/null || echo 'unknown')"
 note "pwd=$(pwd)"
 
 note "ls_root_begin"
