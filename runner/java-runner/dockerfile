@@ -1,11 +1,7 @@
 # runner/java-runner/Dockerfile
 FROM maven:3.9-eclipse-temurin-21
 
-# Always set the build context relative to repo root
-COPY ./samples/palindrome-sample /template
-COPY ./runner/java-runner/entrypoint.sh /entrypoint.sh
-
-# Copy instructor template into image
+# Copy instructor template for dependency resolution
 COPY samples/palindrome-sample /template
 
 # Pre-fetch ALL deps/plugins into an image-local repo
@@ -14,13 +10,66 @@ RUN mvn -q -f /template/pom.xml -Dmaven.repo.local=/opt/m2repo -DskipTests depen
 # Also run tests once (do NOT skip) to force surefire-junit-platform to be fetched
 RUN mvn -q -f /template/pom.xml -Dmaven.repo.local=/opt/m2repo -DfailIfNoTests=false test || true
 
+# Create the tests module structure at /work/input/tests (instructor-controlled)
+RUN mkdir -p /work/input/tests/src/test/java/edu/example/grading && \
+    mkdir -p /work/input/student && \
+    mkdir -p /work/output && \
+    mkdir -p /work/project
+
+# Copy only the test files (instructor-controlled, baked into image)
+COPY samples/palindrome-sample/src/test/java/edu/example/grading/*.java /work/input/tests/src/test/java/edu/example/grading/
+
+# Create the tests module pom.xml
+RUN cat > /work/input/tests/pom.xml <<'EOF'
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>edu.example.grading</groupId>
+  <artifactId>tests</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <junit.version>5.10.2</junit.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>edu.cmu.cs</groupId>
+      <artifactId>student</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <release>21</release>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+EOF
+
+# Set ownership for non-root user
+RUN chown -R 65532:65532 /work
+
 # Entrypoint
 COPY runner/java-runner/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-
-# Create mountpoints that we'll use at runtime
-RUN mkdir -p /work/input/student /work/input/tests /work/output /work/project && \
-    chown -R 65532:65532 /work
 
 ENTRYPOINT ["/entrypoint.sh"]

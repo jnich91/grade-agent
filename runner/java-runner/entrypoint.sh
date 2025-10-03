@@ -72,9 +72,9 @@ if [ -f /work/input/pom.xml ]; then
 # CHANGED: don't require a student pom.xml; just require tests pom + student dir
 elif [ -f /work/input/tests/pom.xml ] && [ -d /work/input/student ]; then
   MODE="reactor"
-  rm -f /work/student /work/tests 2>/dev/null || true
-  ln -s /work/input/student /work/student
-  ln -s /work/input/tests   /work/tests
+  # Copy tests and student to writable locations (can't symlink with tmpfs)
+  cp -r /work/input/tests /work/tests
+  cp -r /work/input/student /work/student
   PROJECT_ROOT="/work"
 
   # Top-level reactor pom (generate if missing)
